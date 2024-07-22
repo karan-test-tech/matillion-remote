@@ -1,0 +1,132 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Table Metadata To Grid"
+      parameters:
+        componentName: "Start"
+    Table Metadata To Grid:
+      type: "table-metadata-to-grid"
+      transitions:
+        success:
+        - "Table Metadata To Grid 2"
+      parameters:
+        componentName: "Table Metadata To Grid"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        gridVariable: "table1_metadata"
+        gridVariableMapping:
+        - "Name"
+        - "Database Type"
+        targetTable: "FLIGHTS_DATA_FILTERED"
+    Table Metadata To Grid 2:
+      type: "table-metadata-to-grid"
+      transitions:
+        success:
+        - "Python Pushdown"
+      parameters:
+        componentName: "Table Metadata To Grid 2"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        gridVariable: "table2_metadata"
+        gridVariableMapping:
+        - "Name"
+        - "Database Type"
+        targetTable: "FLIGHTS_DATA"
+    Python Pushdown:
+      type: "python-pushdown"
+      transitions:
+        success:
+        - "Print Variables"
+        failure:
+        - "Print Variables 2"
+      parameters:
+        componentName: "Python Pushdown"
+        externalAccessIntegrations:
+        packages:
+        scriptLocation: "Component"
+        pythonScript: |-
+          if table1_metadata == table2_metadata:
+              context.updateVariable('test1',1)
+          else:
+              context.updateVariable('test1',0)
+        scriptTimeout: "360"
+    Print Variables:
+      type: "print-variables"
+      parameters:
+        componentName: "Print Variables"
+        variablesToPrint:
+        - - "table1_metadata"
+        - - "table2_metadata"
+        prefixText:
+        includeVariableName: "No"
+    Print Variables 2:
+      type: "print-variables"
+      parameters:
+        componentName: "Print Variables 2"
+        variablesToPrint:
+        - - "table1_metadata"
+        - - "table2_metadata"
+        prefixText:
+        includeVariableName: "No"
+  variables:
+    table1_metadata:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          A:
+            columnType: "TEXT"
+          B:
+            columnType: "TEXT"
+      defaultValue: []
+    table2_metadata:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          name:
+            columnType: "TEXT"
+          type:
+            columnType: "TEXT"
+      defaultValue: []
+design:
+  components:
+    Start:
+      position:
+        x: -260
+        "y": -10
+      tempMetlId: 1
+    Table Metadata To Grid:
+      position:
+        x: -140
+        "y": -10
+      tempMetlId: 2
+    Table Metadata To Grid 2:
+      position:
+        x: -20
+        "y": -10
+      tempMetlId: 3
+    Python Pushdown:
+      position:
+        x: 100
+        "y": -10
+      tempMetlId: 4
+    Print Variables:
+      position:
+        x: 240
+        "y": -50
+      tempMetlId: 5
+    Print Variables 2:
+      position:
+        x: 250
+        "y": 40
+      tempMetlId: 6
