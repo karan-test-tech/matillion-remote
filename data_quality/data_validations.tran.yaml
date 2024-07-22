@@ -1,0 +1,79 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    MOCK_DATA:
+      type: "table-input"
+      parameters:
+        componentName: "MOCK_DATA"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "MOCK_DATA"
+        columnNames:
+        - "ID"
+        - "FIRST_NAME"
+        - "LAST_NAME"
+        - "EMAIL"
+        - "CONTACT"
+        timeOffset:
+    SQL:
+      type: "sql"
+      sources:
+      - "MOCK_DATA"
+      parameters:
+        componentName: "SQL"
+        query: "WITH name_validation AS (\r\n    select * from mock_data where\r\n\
+          \    first_name IS NOT NULL AND last_name IS NOT NULL\r\nAND \r\nLENGTH(first_name)\
+          \ >= 3 AND LENGTH(first_name) <= 20\r\nAND LENGTH(last_name) >= 3 AND LENGTH(last_name)\
+          \ <= 20\r\nAND first_name = TRIM(first_name)\r\nAND last_name = TRIM(last_name)\r\
+          \nAND first_name != '' AND last_name != ''\r\nAND first_name = INITCAP(first_name)\r\
+          \nAND last_name  = INITCAP(last_name)\r\nAND first_name REGEXP '^[A-Z][a-z]*$'\r\
+          \nAND last_name REGEXP '^[A-Z][a-z]*$'\r\n),\r\nemail_validation AS (\r\n\
+          \    select * from name_validation \r\n    where \r\n    email is NOT NULL\
+          \ and email != '' \r\n    AND \r\n    LENGTH(email) >= 5 AND LENGTH(email)\
+          \ <=40\r\n    AND\r\n    email = TRIM(email)\r\n    AND\r\n    email REGEXP\
+          \ '^[A-Za-z][A-za-z0-9]+@[A-Za-z]+\\.[A-Za-z]+$'\r\n),\r\ncontact_validation\
+          \ As (\r\n    select * from email_validation\r\n    where \r\n    contact\
+          \ IS NOT NULL AND contact != ''\r\n    AND\r\n    contact REGEXP '^[0-9]{3}-[0-9]{3}-[0-9]{4}$'\r\
+          \n)\r\nselect * from contact_validation"
+    FILTERED_MOCK_DATA:
+      type: "table-output"
+      sources:
+      - "SQL"
+      parameters:
+        componentName: "FILTERED_MOCK_DATA"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "FILTERED_MOCK_DATA"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "ID"
+          - "ID"
+        - - "FIRST_NAME"
+          - "FIRST_NAME"
+        - - "LAST_NAME"
+          - "LAST_NAME"
+        - - "EMAIL"
+          - "EMAIL"
+        - - "CONTACT"
+          - "CONTACT"
+        orderBy:
+        outputMode: "Truncate"
+design:
+  components:
+    MOCK_DATA:
+      position:
+        x: -440
+        "y": -70
+      tempMetlId: 1
+    SQL:
+      position:
+        x: -320
+        "y": -70
+      tempMetlId: 2
+    FILTERED_MOCK_DATA:
+      position:
+        x: -200
+        "y": -70
+      tempMetlId: 3
