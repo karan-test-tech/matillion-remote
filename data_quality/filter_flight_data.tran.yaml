@@ -1,0 +1,220 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    FLIGHTS_DATA:
+      type: "table-input"
+      parameters:
+        componentName: "FLIGHTS_DATA"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "FLIGHTS_DATA"
+        columnNames:
+        - "ID"
+        - "YEAR"
+        - "MONTH"
+        - "DAY"
+        - "DEP_TIME"
+        - "SCHED_DEP_TIME"
+        - "DEP_DELAY"
+        - "ARR_TIME"
+        - "SCHED_ARR_TIME"
+        - "ARR_DELAY"
+        - "CARRIER"
+        - "FLIGHT"
+        - "TAILNUM"
+        - "ORIGIN"
+        - "DEST"
+        - "AIR_TIME"
+        - "DISTANCE"
+        - "HOUR"
+        - "MINUTE"
+        - "TIME_HOUR"
+        - "NAME"
+        timeOffset:
+    SQL:
+      type: "sql"
+      sources:
+      - "FLIGHTS_DATA"
+      parameters:
+        componentName: "SQL"
+        query: "WITH RankedData AS (\r\n    SELECT\r\n        *,\r\n        ROW_NUMBER()\
+          \ OVER (PARTITION BY ID ORDER BY time_hour) AS RowNum\r\n    FROM \r\n \
+          \       flights_data\r\n),\r\nMaxRowNumData AS (\r\n    SELECT\r\n     \
+          \   *,\r\n        MAX(RowNum) OVER (PARTITION BY ID) AS MaxRowNum\r\n  \
+          \  FROM \r\n        RankedData\r\n)\r\nSELECT \r\n    *\r\nFROM \r\n   \
+          \ MaxRowNumData\r\nWHERE \r\n    RowNum = MaxRowNum\r\n    AND id IS NOT\
+          \ NULL\r\n        AND year IS NOT NULL\r\n        AND month IS NOT NULL\r\
+          \n        AND day IS NOT NULL\r\n        AND dep_time IS NOT NULL\r\n  \
+          \      AND sched_dep_time IS NOT NULL\r\n        AND dep_delay IS NOT NULL\r\
+          \n        AND arr_time IS NOT NULL\r\n        AND sched_arr_time IS NOT\
+          \ NULL\r\n        AND arr_delay IS NOT NULL\r\n        AND carrier IS NOT\
+          \ NULL\r\n        AND flight IS NOT NULL\r\n        AND tailnum IS NOT NULL\r\
+          \n        AND origin IS NOT NULL\r\n        AND dest IS NOT NULL\r\n   \
+          \     AND air_time IS NOT NULL\r\n        AND distance IS NOT NULL\r\n \
+          \       AND hour IS NOT NULL\r\n        AND minute IS NOT NULL\r\n     \
+          \   AND time_hour IS NOT NULL\r\n        AND name IS NOT NULL"
+    SQL 2:
+      type: "sql"
+      sources:
+      - "FLIGHTS_DATA"
+      parameters:
+        componentName: "SQL 2"
+        query: "WITH RankedData AS (\r\n    SELECT\r\n        *,\r\n        ROW_NUMBER()\
+          \ OVER (PARTITION BY ID ORDER BY time_hour) AS RowNum\r\n    FROM \r\n \
+          \       flights_data\r\n),\r\nMaxRowNumData AS (\r\n    SELECT\r\n     \
+          \   *,\r\n        MAX(RowNum) OVER (PARTITION BY ID) AS MaxRowNum\r\n  \
+          \  FROM \r\n        RankedData\r\n)\r\nSELECT \r\n    *\r\nFROM \r\n   \
+          \ MaxRowNumData\r\nWHERE \r\n    RowNum = MaxRowNum\r\n    AND (id IS NULL\r\
+          \n        OR year IS NULL\r\n        OR month IS NULL\r\n        OR day\
+          \ IS NULL\r\n        OR dep_time IS NULL\r\n        OR sched_dep_time IS\
+          \ NULL\r\n        OR dep_delay IS NULL\r\n        OR arr_time IS NULL\r\n\
+          \        OR sched_arr_time IS NULL\r\n        OR arr_delay IS NULL\r\n \
+          \       OR carrier IS NULL\r\n        OR flight IS NULL\r\n        OR tailnum\
+          \ IS NULL\r\n        OR origin IS NULL\r\n        OR dest IS NULL\r\n  \
+          \      OR air_time IS NULL\r\n        OR distance IS NULL\r\n        OR\
+          \ hour IS NULL\r\n        OR minute IS NULL\r\n        OR time_hour IS NULL\r\
+          \n        OR name IS NULL)\r\n"
+    PROBLEMATIC_FLIGHTS_DATA:
+      type: "table-output"
+      sources:
+      - "SQL 2"
+      parameters:
+        componentName: "PROBLEMATIC_FLIGHTS_DATA"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "PROBLEMATIC_FLIGHTS_DATA"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "ID"
+          - "ID"
+        - - "YEAR"
+          - "YEAR"
+        - - "MONTH"
+          - "MONTH"
+        - - "DAY"
+          - "DAY"
+        - - "DEP_TIME"
+          - "DEP_TIME"
+        - - "SCHED_DEP_TIME"
+          - "SCHED_DEP_TIME"
+        - - "DEP_DELAY"
+          - "DEP_DELAY"
+        - - "ARR_TIME"
+          - "ARR_TIME"
+        - - "SCHED_ARR_TIME"
+          - "SCHED_ARR_TIME"
+        - - "ARR_DELAY"
+          - "ARR_DELAY"
+        - - "CARRIER"
+          - "CARRIER"
+        - - "FLIGHT"
+          - "FLIGHT"
+        - - "TAILNUM"
+          - "TAILNUM"
+        - - "ORIGIN"
+          - "ORIGIN"
+        - - "DEST"
+          - "DEST"
+        - - "AIR_TIME"
+          - "AIR_TIME"
+        - - "DISTANCE"
+          - "DISTANCE"
+        - - "HOUR"
+          - "HOUR"
+        - - "MINUTE"
+          - "MINUTE"
+        - - "TIME_HOUR"
+          - "TIME_HOUR"
+        - - "NAME"
+          - "NAME"
+        - - "MAXROWNUM"
+          - "ROW_NUM"
+        orderBy:
+        outputMode: "Append"
+    FLIGHTS_DATA_FILTERED:
+      type: "table-output"
+      sources:
+      - "SQL"
+      parameters:
+        componentName: "FLIGHTS_DATA_FILTERED"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "FLIGHTS_DATA_FILTERED"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "ID"
+          - "ID"
+        - - "YEAR"
+          - "YEAR"
+        - - "MONTH"
+          - "MONTH"
+        - - "DAY"
+          - "DAY"
+        - - "DEP_TIME"
+          - "DEP_TIME"
+        - - "SCHED_DEP_TIME"
+          - "SCHED_DEP_TIME"
+        - - "DEP_DELAY"
+          - "DEP_DELAY"
+        - - "ARR_TIME"
+          - "ARR_TIME"
+        - - "SCHED_ARR_TIME"
+          - "SCHED_ARR_TIME"
+        - - "ARR_DELAY"
+          - "ARR_DELAY"
+        - - "CARRIER"
+          - "CARRIER"
+        - - "FLIGHT"
+          - "FLIGHT"
+        - - "TAILNUM"
+          - "TAILNUM"
+        - - "ORIGIN"
+          - "ORIGIN"
+        - - "DEST"
+          - "DEST"
+        - - "AIR_TIME"
+          - "AIR_TIME"
+        - - "DISTANCE"
+          - "DISTANCE"
+        - - "HOUR"
+          - "HOUR"
+        - - "MINUTE"
+          - "MINUTE"
+        - - "TIME_HOUR"
+          - "TIME_HOUR"
+        - - "NAME"
+          - "NAME"
+        - - "MAXROWNUM"
+          - "ROW_NUM"
+        orderBy:
+        outputMode: "Append"
+design:
+  components:
+    FLIGHTS_DATA:
+      position:
+        x: -380
+        "y": -40
+      tempMetlId: 1
+    SQL:
+      position:
+        x: -260
+        "y": -80
+      tempMetlId: 2
+    SQL 2:
+      position:
+        x: -260
+        "y": 20
+      tempMetlId: 3
+    PROBLEMATIC_FLIGHTS_DATA:
+      position:
+        x: -140
+        "y": 20
+      tempMetlId: 4
+    FLIGHTS_DATA_FILTERED:
+      position:
+        x: -150
+        "y": -80
+      tempMetlId: 5
