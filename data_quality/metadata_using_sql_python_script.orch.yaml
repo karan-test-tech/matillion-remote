@@ -1,0 +1,109 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start:
+      type: "start"
+      transitions:
+        unconditional:
+        - "SQL Script"
+      parameters:
+        componentName: "Start"
+    SQL Script:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Python Pushdown"
+      parameters:
+        componentName: "SQL Script"
+        sqlScript: "CREATE OR REPLACE TABLE temp_results AS\r\n(\r\nSELECT COUNT(*)\
+          \ AS result_count\r\nFROM (\r\n    (SELECT column_name, data_type FROM information_schema.columns\
+          \ \r\n     WHERE table_catalog = 'DEMO' \r\n     AND table_schema = 'PUBLIC'\
+          \ \r\n     AND table_name = 'FLIGHTS_DATA'\r\n    MINUS\r\n    SELECT column_name,\
+          \ data_type FROM information_schema.columns \r\n     WHERE table_catalog\
+          \ = 'DEMO' \r\n     AND table_schema = 'PUBLIC' \r\n     AND table_name\
+          \ = 'PROBLEMATIC_FLIGHTS_DATA')\r\n    UNION\r\n    (SELECT column_name,\
+          \ data_type FROM information_schema.columns \r\n     WHERE table_catalog\
+          \ = 'DEMO' \r\n     AND table_schema = 'PUBLIC' \r\n     AND table_name\
+          \ = 'PROBLEMATIC_FLIGHTS_DATA'\r\n    MINUS\r\n    SELECT column_name, data_type\
+          \ FROM information_schema.columns \r\n     WHERE table_catalog = 'DEMO'\
+          \ \r\n     AND table_schema = 'PUBLIC' \r\n     AND table_name = 'FLIGHTS_DATA')\r\
+          \n) as diff_results\r\n)"
+    Python Pushdown:
+      type: "python-pushdown"
+      transitions:
+        success:
+        - "If"
+      parameters:
+        componentName: "Python Pushdown"
+        externalAccessIntegrations:
+        packages:
+        scriptLocation: "Component"
+        pythonScript: |-
+          session.use_warehouse("COMPUTE_WH")
+          session.use_database("DEMO")
+          session.use_schema("PUBLIC")
+
+          queryresult = session.sql('select * from temp_results').collect()
+          print("queryresult is: ",queryresult)
+          if queryresult[0][0] == 0:
+              context.updateVariable("result_count",1)
+          else:
+              context.updateVariable("result_count",0)
+        scriptTimeout: "360"
+    If:
+      type: "if"
+      transitions:
+        failure:
+        - "End Failure"
+        "true":
+        - "End Success"
+      parameters:
+        componentName: "If"
+        mode: "Simple"
+        condition:
+        - - "result_count"
+          - "Is"
+          - "Equal to"
+          - "1"
+        combineConditions: "And"
+    End Success:
+      type: "end-success"
+      parameters:
+        componentName: "End Success"
+    End Failure:
+      type: "end-failure"
+      parameters:
+        componentName: "End Failure"
+design:
+  components:
+    Start:
+      position:
+        x: -340
+        "y": -20
+      tempMetlId: 1
+    SQL Script:
+      position:
+        x: -220
+        "y": -20
+      tempMetlId: 2
+    Python Pushdown:
+      position:
+        x: -100
+        "y": -20
+      tempMetlId: 3
+    If:
+      position:
+        x: 20
+        "y": -20
+      tempMetlId: 4
+    End Success:
+      position:
+        x: 140
+        "y": -70
+      tempMetlId: 5
+    End Failure:
+      position:
+        x: 130
+        "y": 50
+      tempMetlId: 6
